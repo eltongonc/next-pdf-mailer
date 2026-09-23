@@ -1,14 +1,6 @@
 import { z } from "zod";
 import { Resend } from "resend";
-import {
-  admin,
-  body,
-  check,
-  failure,
-  hash,
-  HttpError,
-  userId,
-} from "@/lib/server";
+import { admin, body, failure, hash, HttpError, userId } from "@/lib/server";
 import { renderTemplate, templateSchema } from "@/lib/templates";
 import { generatePdf } from "@/lib/pdf";
 export const runtime = "nodejs";
@@ -33,13 +25,11 @@ export async function POST(request: Request) {
         "Provide an Idempotency-Key header (8–128 letters, numbers, underscores or hyphens).",
       );
     const db = admin();
-    const { data: stored, error } = await db
-      .from("templates")
-      .select("id,name,html,variables,sample_data")
-      .eq("id", input.template_id)
-      .eq("owner_id", owner)
-      .maybeSingle();
-    check(error);
+    const result = await db.query<Record<string, unknown>>(
+      "select id,name,html,variables,sample_data from templates where id = $1 and owner_id = $2",
+      [input.template_id, owner],
+    );
+    const stored = result.rows[0];
     if (!stored) throw new HttpError(404, "Template not found.");
     const template = templateSchema.parse(stored);
     let html: string;
@@ -48,18 +38,24 @@ export async function POST(request: Request) {
     } catch (e) {
       throw new HttpError(400, (e as Error).message);
     }
-    const { data: reservation, error: reserveError } = await db.rpc(
-      "reserve_delivery",
-      {
-        p_owner: owner,
-        p_key: idempotency,
-        p_hash: hash(JSON.stringify(input)),
-        p_template: template.id,
-        p_name: template.name,
-        p_recipient: input.to,
-      },
-    );
-    check(reserveError);
+    const reserved = await db.query<{
+      reservation: {
+        id: string;
+        status: string;
+        conflict?: boolean;
+        limited?: boolean;
+        existing?: boolean;
+      };
+    }>("select reserve_delivery($1,$2,$3,$4,$5,$6) as reservation", [
+      owner,
+      idempotency,
+      hash(JSON.stringify(input)),
+      template.id,
+      template.name,
+      input.to,
+    ]);
+    const reservation = reserved.rows[0]?.reservation;
+    if (!reservation) throw new Error("Delivery reservation failed.");
     if (reservation.conflict)
       throw new HttpError(
         409,
@@ -96,30 +92,31 @@ export async function POST(request: Request) {
       if (sendError || !data)
         throw new Error("Email provider did not confirm acceptance.");
       accepted = true;
-      const update = await db
-        .from("deliveries")
-        .update({ status: "accepted", provider_id: data.id })
-        .eq("id", reservation.id)
-        .eq("owner_id", owner);
-      check(update.error);
+      await db.query(
+        "update deliveries set status = 'accepted', provider_id = $1 where id = $2 and owner_id = $3",
+        [data.id, reservation.id, owner],
+      );
       return Response.json(
         { id: reservation.id, status: "accepted" },
         { status: 202 },
       );
     } catch (e) {
       // Ambiguous provider failures must not cause automatic duplicate sends.
-      const update = await db
-        .from("deliveries")
-        .update({
-          status: accepted ? "accepted" : "failed",
-          error: accepted
-            ? "Provider accepted; delivery tracking needs reconciliation."
-            : "Send was not confirmed. Check provider logs before submitting a new request.",
-        })
-        .eq("id", reservation.id)
-        .eq("owner_id", owner);
-      if (update.error)
+      try {
+        await db.query(
+          "update deliveries set status = $1, error = $2 where id = $3 and owner_id = $4",
+          [
+            accepted ? "accepted" : "failed",
+            accepted
+              ? "Provider accepted; delivery tracking needs reconciliation."
+              : "Send was not confirmed. Check provider logs before submitting a new request.",
+            reservation.id,
+            owner,
+          ],
+        );
+      } catch {
         console.error("Unable to update delivery status:", reservation.id);
+      }
       throw e;
     }
   } catch (error) {

@@ -1,45 +1,39 @@
 import { randomBytes } from "node:crypto";
 import { z } from "zod";
-import {
-  admin,
-  body,
-  check,
-  failure,
-  hash,
-  HttpError,
-  userId,
-} from "@/lib/server";
+import { admin, body, failure, hash, HttpError, userId } from "@/lib/server";
 import { renderTemplate, templateSchema } from "@/lib/templates";
 export const runtime = "nodejs";
+const actionSchema = z.discriminatedUnion("action", [
+  z.object({ action: z.literal("save"), template: templateSchema }),
+  z.object({
+    action: z.literal("create_key"),
+    name: z.string().trim().min(1).max(60),
+  }),
+  z.object({ action: z.literal("revoke_key"), id: z.uuid() }),
+]);
 export async function GET(request: Request) {
   try {
     const owner = await userId(request);
     const db = admin();
-    const results = await Promise.all([
-      db
-        .from("templates")
-        .select("id,name,html,variables,sample_data")
-        .eq("owner_id", owner)
-        .order("updated_at", { ascending: false }),
-      db
-        .from("api_keys")
-        .select("id,name,prefix,created_at")
-        .eq("owner_id", owner)
-        .is("revoked_at", null)
-        .order("created_at", { ascending: false }),
-      db
-        .from("deliveries")
-        .select("id,template_name,recipient,status,created_at,error")
-        .eq("owner_id", owner)
-        .order("created_at", { ascending: false })
-        .limit(100),
+    const [templates, keys, deliveries] = await Promise.all([
+      db.query(
+        "select id,name,html,variables,sample_data from templates where owner_id = $1 order by updated_at desc",
+        [owner],
+      ),
+      db.query(
+        "select id,name,prefix,created_at from api_keys where owner_id = $1 and revoked_at is null order by created_at desc",
+        [owner],
+      ),
+      db.query(
+        "select id,template_name,recipient,status,created_at,error from deliveries where owner_id = $1 order by created_at desc limit 100",
+        [owner],
+      ),
     ]);
-    results.forEach((r) => check(r.error));
     return Response.json(
       {
-        templates: results[0].data,
-        keys: results[1].data,
-        deliveries: results[2].data,
+        templates: templates.rows,
+        keys: keys.rows,
+        deliveries: deliveries.rows,
       },
       { headers: { "Cache-Control": "no-store" } },
     );
@@ -50,58 +44,49 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     const owner = await userId(request);
-    const payload = await body(request);
+    const payload = actionSchema.parse(await body(request));
     const db = admin();
     if (payload.action === "save") {
-      const template = templateSchema.parse(payload.template);
+      const template = payload.template;
       try {
         renderTemplate(template, template.sample_data);
-      } catch (e) {
-        throw new HttpError(400, (e as Error).message);
+      } catch (error) {
+        throw new HttpError(
+          400,
+          error instanceof Error ? error.message : "Invalid template.",
+        );
       }
-      const existing = await db
-        .from("templates")
-        .select("owner_id")
-        .eq("id", template.id)
-        .maybeSingle();
-      check(existing.error);
-      if (existing.data && existing.data.owner_id !== owner)
-        throw new HttpError(404, "Template not found.");
-      const result = existing.data
-        ? await db
-            .from("templates")
-            .update({ ...template, updated_at: new Date().toISOString() })
-            .eq("id", template.id)
-            .eq("owner_id", owner)
-        : await db.from("templates").insert({ ...template, owner_id: owner });
-      check(result.error);
+      const result = await db.query(
+        `insert into templates(id, owner_id, name, html, variables, sample_data)
+         values ($1, $2, $3, $4, $5, $6)
+         on conflict (id) do update set name = excluded.name, html = excluded.html,
+           variables = excluded.variables, sample_data = excluded.sample_data, updated_at = now()
+         where templates.owner_id = $2 returning id`,
+        [
+          template.id,
+          owner,
+          template.name,
+          template.html,
+          JSON.stringify(template.variables),
+          JSON.stringify(template.sample_data),
+        ],
+      );
+      if (!result.rowCount) throw new HttpError(404, "Template not found.");
       return Response.json({ ok: true });
     }
     if (payload.action === "create_key") {
-      const name = z.string().trim().min(1).max(60).parse(payload.name);
       const key = `pp_${randomBytes(32).toString("hex")}`;
-      const { error } = await db
-        .from("api_keys")
-        .insert({
-          owner_id: owner,
-          name,
-          hash: hash(key),
-          prefix: key.slice(0, 11),
-        });
-      check(error);
+      await db.query(
+        "insert into api_keys(owner_id,name,hash,prefix) values ($1,$2,$3,$4)",
+        [owner, payload.name, hash(key), key.slice(0, 11)],
+      );
       return Response.json({ key });
     }
-    if (payload.action === "revoke_key") {
-      const id = z.string().uuid().parse(payload.id);
-      const { error } = await db
-        .from("api_keys")
-        .update({ revoked_at: new Date().toISOString() })
-        .eq("id", id)
-        .eq("owner_id", owner);
-      check(error);
-      return Response.json({ ok: true });
-    }
-    throw new HttpError(400, "Unknown action.");
+    await db.query(
+      "update api_keys set revoked_at = now() where id = $1 and owner_id = $2",
+      [payload.id, owner],
+    );
+    return Response.json({ ok: true });
   } catch (error) {
     return failure(error);
   }

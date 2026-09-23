@@ -1,5 +1,5 @@
 import { Resend } from "resend";
-import { admin, check, failure, HttpError } from "@/lib/server";
+import { admin, failure, HttpError } from "@/lib/server";
 export async function POST(request: Request) {
   try {
     if (!process.env.RESEND_WEBHOOK_SECRET)
@@ -29,24 +29,20 @@ export async function POST(request: Request) {
     )[event.type];
     if (status && "email_id" in event.data) {
       const db = admin();
-      const found = await db
-        .from("deliveries")
-        .select("id")
-        .eq("provider_id", event.data.email_id)
-        .maybeSingle();
-      check(found.error);
+      const found = await db.query<{ id: string }>(
+        "select id from deliveries where provider_id = $1",
+        [event.data.email_id],
+      );
       // A webhook can race the send response. Ask the provider to retry after the record is linked.
-      if (!found.data)
+      if (!found.rows[0])
         throw new HttpError(
           503,
           "Delivery record not yet available. Retry this event.",
         );
-      const { error } = await db
-        .from("deliveries")
-        .update({ status })
-        .eq("id", found.data.id)
-        .in("status", ["accepted", "processing"]);
-      check(error);
+      await db.query(
+        "update deliveries set status = $1 where id = $2 and status in ('accepted','processing')",
+        [status, found.rows[0].id],
+      );
     }
     return Response.json({ received: true });
   } catch (error) {

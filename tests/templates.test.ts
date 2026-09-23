@@ -8,7 +8,7 @@ import {
 } from "../src/lib/templates";
 import { body, HttpError, userId } from "../src/lib/server";
 
-test("invoice renders repeating rows and escapes supplied HTML", () => {
+void test("invoice renders repeating rows and escapes supplied HTML", () => {
   const result = renderTemplate(starter, {
     ...starter.sample_data,
     customer_name: "<script>alert(1)</script>",
@@ -17,7 +17,7 @@ test("invoice renders repeating rows and escapes supplied HTML", () => {
   assert.match(result, /Development support/);
   assert.match(result, /Content-Security-Policy/);
 });
-test("unknown and missing variables are rejected including inside rows", () => {
+void test("unknown and missing variables are rejected including inside rows", () => {
   assert.throws(
     () =>
       validateData(starter.variables, { ...starter.sample_data, extra: true }),
@@ -33,7 +33,7 @@ test("unknown and missing variables are rejected including inside rows", () => {
     /Unknown variable/,
   );
 });
-test("numbers and dates use strict types and valid calendar dates", () => {
+void test("numbers and dates use strict types and valid calendar dates", () => {
   assert.throws(
     () =>
       validateData(starter.variables, {
@@ -51,7 +51,7 @@ test("numbers and dates use strict types and valid calendar dates", () => {
     /valid YYYY-MM-DD/,
   );
 });
-test("defaults apply and optional lists are empty", () => {
+void test("defaults apply and optional lists are empty", () => {
   assert.deepEqual(
     validateData(
       [
@@ -68,7 +68,7 @@ test("defaults apply and optional lists are empty", () => {
     { title: "Hello", rows: [] },
   );
 });
-test("undeclared template references, raw HTML, duplicate variables and unsafe image URLs fail", () => {
+void test("undeclared template references, raw HTML, duplicate variables and unsafe image URLs fail", () => {
   assert.throws(() =>
     renderTemplate({ ...starter, html: "{{unknown}}" }, starter.sample_data),
   );
@@ -103,7 +103,7 @@ test("undeclared template references, raw HTML, duplicate variables and unsafe i
     false,
   );
 });
-test("row count is bounded", () =>
+void test("row count is bounded", () =>
   assert.throws(
     () =>
       validateData(starter.variables, {
@@ -115,13 +115,13 @@ test("row count is bounded", () =>
       }),
     /at most 100/,
   ));
-test("unauthenticated requests fail before database access", async () => {
+void test("unauthenticated requests fail before database access", async () => {
   await assert.rejects(
     userId(new Request("http://localhost")),
     (e: unknown) => e instanceof HttpError && e.status === 401,
   );
 });
-test("JSON reader bounds actual bytes and rejects malformed JSON", async () => {
+void test("JSON reader bounds actual bytes and rejects malformed JSON", async () => {
   await assert.rejects(
     body(
       new Request("http://localhost", {
@@ -136,7 +136,7 @@ test("JSON reader bounds actual bytes and rejects malformed JSON", async () => {
     (e: unknown) => e instanceof HttpError && e.status === 400,
   );
 });
-test("block conditions must be declared and nested loops are rejected", () => {
+void test("block conditions must be declared and nested loops are rejected", () => {
   assert.throws(
     () =>
       renderTemplate(

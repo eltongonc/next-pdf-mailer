@@ -2,22 +2,48 @@
 
 A Next.js application for creating PDF templates, declaring typed variables, and emailing personalized PDF attachments through an API.
 
-## Run locally
+See [the production-readiness checklist](TODO.md) for launch blockers, scaling work, and release criteria.
 
-Requires Node.js 22+ and a machine capable of running Chromium.
+## Run with Docker
+
+Requires Docker with Compose. Node.js, PostgreSQL, and Chromium run inside containers.
 
 ```sh
-npm install
+docker compose up --build -d
+```
+
+Open http://localhost:3000 and create an account. Compose starts PostgreSQL, applies `database/schema.sql` on the first start, and starts the development server once the database is healthy. Source and test edits are mounted into the app; rebuild after changing dependencies or configuration.
+
+Database data lives in the `postgres_data` volume and survives `docker compose down`. Initialization scripts only run on an empty volume. The bundled database credentials are for local development; the database port is not published to the host.
+
+The app runs as the non-root `node` user. Chromium keeps its sandbox enabled; the app container needs `SYS_ADMIN` for that sandbox and 1 GB of shared memory.
+
+To configure email, copy `.env.example` to `.env`, fill in the Resend settings, and recreate the app with `docker compose up -d`. Compose supplies the internal database URL automatically.
+
+```sh
+docker compose logs -f app
+docker compose exec db psql -U paperpost -d paperpost
+docker compose down
+```
+
+For a production image, run `docker build --target production -t paperpost .`. The build runs lint, type checks, unit tests, and the Next.js build. Deploy behind HTTPS with your own `DATABASE_URL`, public `APP_ORIGIN` (for example `https://paperpost.example.com`), and email settings, plus the Chromium sandbox capability and shared-memory configuration above.
+
+## Run without Docker
+
+Requires Node.js 22+, PostgreSQL, and a machine capable of running Chromium.
+
+```sh
+npm ci
 npm run dev
 ```
 
-Open http://localhost:3000. Without credentials, the app runs as a local playground: edit the example invoice, define variables, preview it, download a real PDF, and save templates in your browser. Demo mode cannot send email or create API keys. The unauthenticated PDF endpoint is available only in development.
+Without `DATABASE_URL`, the app runs as a local playground: edit templates, preview PDFs, and save templates in your browser. Demo mode cannot send email or create API keys. The unauthenticated PDF endpoint is available only in development.
 
-## Connect accounts and email
+## Configure an external database and email
 
-1. Create a Supabase project and run `supabase/schema.sql` once in the SQL editor.
-2. Copy `.env.example` to `.env.local`. Set the Supabase URL, anon key, and service role key. The service role key must remain server-only.
-3. Enable Supabase email/password authentication and set your site URL. Users sign up, confirm their email if confirmation is enabled, and sign in.
+1. Create an empty PostgreSQL database (version 16 or later) and run `psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f database/schema.sql` once. This is a fresh-install schema, not a migration for an existing database.
+2. Copy `.env.example` to `.env.local` and set `DATABASE_URL`. Keep this connection string server-only. Set `APP_ORIGIN` to the exact browser origin (scheme, host, and port, without a trailing slash), so authenticated writes work behind containers and reverse proxies. Configure TLS through the connection string as required by your database provider.
+3. Users can sign up and sign in with email and a password of at least 12 characters. Passwords use salted scrypt hashes; seven-day sessions use HTTP-only cookies and hashed tokens stored in PostgreSQL. Authentication is limited to 10 attempts per email address per 15 minutes. Email verification and password reset are not implemented.
 4. Create a Resend account, verify a sending domain, and set `RESEND_API_KEY` and `MAIL_FROM`.
 5. Restart the app. Save a template and create an API key in the UI.
 6. Configure a Resend webhook at `https://your-host/api/webhooks/resend` for `email.delivered`, `email.bounced`, and `email.failed`. Set `RESEND_WEBHOOK_SECRET`.
@@ -72,8 +98,8 @@ Values are HTML-escaped. Raw HTML interpolation, custom helpers, partials, neste
 ## Architecture and limits
 
 - Next.js App Router, React, TypeScript, custom responsive CSS.
-- Supabase Auth and Postgres; bearer session authentication for the dashboard and hashed API keys for sending.
-- RLS on all tables; templates and deliveries have owner-scoped read policies. All writes and API key access go through server routes with explicit owner checks. The service role is only used on the server.
+- PostgreSQL via a pooled `pg` connection; cookie sessions for the dashboard and hashed bearer API keys for sending.
+- Database access goes through server routes with explicit owner checks and parameterized SQL. PostgreSQL credentials must only be available to the server; there is no public database API. Cookie-authenticated writes require a matching Origin header.
 - Atomic Postgres reservation implements persistent idempotency and 20 sends per minute per workspace.
 - Maximum request size: 1 MB. Maximum rendered HTML: 2 MB. Two concurrent PDF renders per Node process, with browser timeouts and cleanup.
 - Synchronous rendering and sending: no durable background queue. A process failure can leave a delivery `processing`; investigate/reconcile it against provider logs. Multi-instance rendering capacity needs a shared queue/worker before larger-scale use.
@@ -84,14 +110,18 @@ Deploy to a Node.js host that can run Puppeteer's Chromium with its sandbox enab
 ## Checks
 
 ```sh
-npm run lint
-npm run typecheck
-npm test
-npm run build
-# With an unconfigured local dev server running on port 3000:
-node tests/browser-smoke.mjs
+docker compose exec app npm run lint
+docker compose exec app npm run typecheck
+docker compose exec app npm test
+docker compose exec -e TEST_DATABASE_URL=postgresql://paperpost:paperpost@db:5432/paperpost app npm test
+docker compose exec app node tests/browser-accounts.mjs
+docker build --target production -t paperpost .
+# Browser playground smoke test requires a separate unconfigured dev server:
+# node tests/browser-smoke.mjs
 ```
 
-The unit tests cover data validation, escaping, defaults, unknown fields, input limits, and unauthenticated access. The browser smoke test checks local persistence, rendering, actual PDF bytes, mobile overflow, and the send endpoint's authentication boundary. It writes screenshots to `/tmp/paperpost-*.png`.
+ESLint uses type-aware TypeScript rules, rejects unsafe values, unhandled promises, explicit `any`, non-null assertions, and unused variables, and fails on warnings.
 
-Provider references: [Next.js installation](https://nextjs.org/docs/app/getting-started/installation), [Supabase row-level security](https://supabase.com/docs/guides/database/postgres/row-level-security), [Resend email API](https://resend.com/docs/api-reference/emails/send-email), [Puppeteer request interception](https://pptr.dev/api/puppeteer.page.setrequestinterception).
+The tests cover data validation, escaping, defaults, unknown fields, input limits, password hashing, and authentication boundaries. With `TEST_DATABASE_URL`, the database test also checks account login/logout, session expiry, workspace isolation, API key revocation, concurrent idempotency, rate limiting, and real PDF bytes; it cleans up its temporary accounts. The account browser test checks signup, persistent login, logout, and sign-in against Compose. The separate playground browser test checks local persistence, rendering, PDF bytes, mobile overflow, and the send endpoint's authentication boundary, and writes screenshots to `/tmp/paperpost-*.png`.
+
+Provider references: [Next.js installation](https://nextjs.org/docs/app/getting-started/installation), [node-postgres](https://node-postgres.com/), [Resend email API](https://resend.com/docs/api-reference/emails/send-email), [Puppeteer request interception](https://pptr.dev/api/puppeteer.page.setrequestinterception).

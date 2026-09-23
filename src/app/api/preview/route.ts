@@ -1,3 +1,4 @@
+import { z } from "zod";
 import { body, configured, failure, HttpError, userId } from "@/lib/server";
 import { renderTemplate, templateSchema } from "@/lib/templates";
 import { generatePdf } from "@/lib/pdf";
@@ -9,9 +10,11 @@ export async function POST(request: Request) {
     else if (process.env.NODE_ENV === "production")
       throw new HttpError(
         503,
-        "Configure Supabase before enabling previews in production.",
+        "Configure PostgreSQL before enabling previews in production.",
       );
-    const input = await body(request);
+    const input = z
+      .object({ template: templateSchema })
+      .parse(await body(request));
     const template = templateSchema.parse(input.template);
     let html: string;
     try {

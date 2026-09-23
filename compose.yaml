@@ -1,0 +1,42 @@
+services:
+  db:
+    image: postgres:17-bookworm
+    environment:
+      POSTGRES_USER: paperpost
+      POSTGRES_PASSWORD: paperpost
+      POSTGRES_DB: paperpost
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./database/schema.sql:/docker-entrypoint-initdb.d/001-schema.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U paperpost -d paperpost"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  app:
+    build:
+      context: .
+      target: development
+    init: true
+    ports:
+      - "127.0.0.1:3000:3000"
+    environment:
+      DATABASE_URL: postgresql://paperpost:paperpost@db:5432/paperpost
+      APP_ORIGIN: http://localhost:3000
+      RESEND_API_KEY: ${RESEND_API_KEY:-}
+      MAIL_FROM: ${MAIL_FROM:-Paperpost <documents@example.com>}
+      RESEND_WEBHOOK_SECRET: ${RESEND_WEBHOOK_SECRET:-}
+    depends_on:
+      db:
+        condition: service_healthy
+    # Chromium's sandbox requires this capability inside Docker.
+    cap_add:
+      - SYS_ADMIN
+    shm_size: 1gb
+    volumes:
+      - ./src:/app/src
+      - ./tests:/app/tests
+
+volumes:
+  postgres_data:
