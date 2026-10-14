@@ -1,4 +1,5 @@
 import { Copy, KeyRound, Plus } from "lucide-react";
+import { Alert, Button, Paper, TextInput } from "@mantine/core";
 import type { ApiKey } from "@/lib/templates";
 
 export default function ApiKeysView({
@@ -25,42 +26,40 @@ export default function ApiKeysView({
   onDismiss: () => void;
 }) {
   return (
-    <div className="panel">
+    <Paper className="panel" withBorder>
       <h2>Create an API key</h2>
       <p>
         Keys can send documents from this workspace. The full key is shown only
         once.
       </p>
       <div className="inline-form">
-        <input
+        <TextInput className="key-name-field"
           aria-label="Key name"
           value={keyName}
           onChange={(e) => onNameChange(e.target.value)}
           placeholder="Key name"
         />
-        <button
+        <Button variant="filled" leftSection={<Plus size={16} />}
           className="primary"
           disabled={!account || busy || !keyName.trim()}
           onClick={() => onCreate()}
         >
-          <Plus size={16} />
           Create key
-        </button>
+        </Button>
       </div>
       {!account && (
-        <p className="notice-inline">
+        <Alert color="yellow" className="notice-inline">
           Connect PostgreSQL and sign in to create real API keys.
-        </p>
+        </Alert>
       )}
       {newKey && (
         <div className="key-reveal">
           <strong>Copy this key now. It won’t be shown again.</strong>
           <code>{newKey}</code>
-          <button onClick={() => onCopy()}>
-            <Copy size={14} />
+          <Button onClick={() => onCopy()} leftSection={<Copy size={14} />}>
             Copy key
-          </button>
-          <button onClick={() => onDismiss()}>Dismiss</button>
+          </Button>
+          <Button onClick={() => onDismiss()}>Dismiss</Button>
         </div>
       )}
       {keys.map((k) => (
@@ -68,11 +67,11 @@ export default function ApiKeysView({
           <KeyRound size={18} />
           <strong>{k.name}</strong>
           <code>{k.prefix}…</code>
-          <button onClick={() => onRevoke(k.id)} disabled={busy}>
+          <Button onClick={() => onRevoke(k.id)} disabled={busy}>
             Revoke
-          </button>
+          </Button>
         </div>
       ))}
-    </div>
+    </Paper>
   );
 }

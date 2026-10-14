@@ -1,4 +1,5 @@
 import { Plus } from "lucide-react";
+import { Button } from "@mantine/core";
 import type { View } from "./navigation";
 
 export default function PageHeading({
@@ -38,14 +39,14 @@ export default function PageHeading({
         </p>
       </div>
       {view === "templates" && (
-        <button className="primary" onClick={onCreate}>
-          <Plus size={17} /> Create template
-        </button>
+        <Button variant="filled" className="primary" onClick={onCreate} leftSection={<Plus size={17} />}>
+          Create template
+        </Button>
       )}
       {view === "deliveries" && account && (
-        <button disabled={busy} onClick={() => onRefresh()}>
+        <Button disabled={busy} onClick={() => onRefresh()}>
           Refresh history
-        </button>
+        </Button>
       )}
     </div>
   );

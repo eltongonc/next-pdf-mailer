@@ -2,6 +2,7 @@ import VariablesEditor from "./variables-editor";
 import DocumentPreview from "./document-preview";
 import TestSendForm from "./test-send-form";
 import { useMemo, useState } from "react";
+import { Alert, Button, Tabs, TextInput, Textarea } from "@mantine/core";
 import {
   ArrowDownToLine,
   ArrowLeft,
@@ -58,13 +59,15 @@ export default function TemplateEditor({
   }
   return (
     <>
-      <button className="back" onClick={onBack}>
-        <ArrowLeft size={14} /> All templates
-      </button>
+      <Button variant="subtle" className="back" onClick={onBack} leftSection={<ArrowLeft size={14} />}>
+        All templates
+      </Button>
       <div className="editor-heading">
         <div>
-          <input
-            className="title-input"
+          <TextInput
+            variant="unstyled"
+            className="title-field"
+            classNames={{ input: "title-input" }}
             aria-label="Template name"
             value={template.name}
             onChange={(e) => setTemplate({ ...template, name: e.target.value })}
@@ -74,44 +77,40 @@ export default function TemplateEditor({
           </div>
         </div>
         <div className="button-group">
-          <button
+          <Button leftSection={<ArrowDownToLine size={16} />}
             disabled={busy || !!preview.error}
             onClick={() => void action(onPdf)}
           >
-            <ArrowDownToLine size={16} /> Download PDF
-          </button>
-          <button
+            Download PDF
+          </Button>
+          <Button variant="filled" leftSection={busy ? <LoaderCircle className="spin" size={16} /> : <Check size={16} />}
             className="primary"
             disabled={busy || !!preview.error}
             onClick={() => void action(onSave)}
           >
-            {busy ? (
-              <LoaderCircle className="spin" size={16} />
-            ) : (
-              <Check size={16} />
-            )}{" "}
             Save template
-          </button>
+          </Button>
         </div>
       </div>
       <div className="editor-grid">
-        <section className="editor-panel">
-          <div className="editor-tabs">
+        <Tabs component="section" className="editor-panel" value={tab} onChange={(value) => {
+          if (value === "html" || value === "variables" || value === "data") setTab(value);
+        }}>
+          <Tabs.List className="editor-tabs" aria-label="Template editor">
             {(["html", "variables", "data"] as const).map((t) => (
-              <button
+              <Tabs.Tab value={t} leftSection={t === "html" ? <Code2 size={15} /> : <Braces size={15} />}
                 key={t}
                 className={tab === t ? "selected" : ""}
-                onClick={() => setTab(t)}
               >
-                {t === "html" ? <Code2 size={15} /> : <Braces size={15} />}{" "}
                 {t === "html"
                   ? "HTML & CSS"
                   : t === "variables"
                     ? `Variables (${template.variables.length})`
                     : "Sample data"}
-              </button>
+              </Tabs.Tab>
             ))}
-          </div>
+          </Tabs.List>
+          <Tabs.Panel value={tab} key={tab}>
           {tab === "html" ? (
             <>
               <div className="editor-help">
@@ -119,8 +118,9 @@ export default function TemplateEditor({
                 <code>{"{{#each items}}…{{/each}}"}</code>. Styles go in a
                 &lt;style&gt; tag.
               </div>
-              <textarea
-                className="code-editor"
+              <Textarea
+                className="code-editor-field"
+                classNames={{ input: "code-editor" }}
                 spellCheck={false}
                 aria-label="Template HTML and CSS"
                 value={template.html}
@@ -134,8 +134,9 @@ export default function TemplateEditor({
               <div className="editor-help">
                 Use sample JSON to see how your real document will look.
               </div>
-              <textarea
-                className="code-editor"
+              <Textarea
+                className="code-editor-field"
+                classNames={{ input: "code-editor" }}
                 spellCheck={false}
                 aria-label="Sample JSON data"
                 value={sample}
@@ -148,13 +149,14 @@ export default function TemplateEditor({
               onChange={(variables) => setTemplate({ ...template, variables })}
             />
           )}
-        </section>
+          </Tabs.Panel>
+        </Tabs>
         <DocumentPreview html={preview.html} error={preview.error} />
       </div>
       {error && (
-        <p role="alert" className="notice-inline">
+        <Alert role="alert" color="red" className="notice-inline error-notice">
           {error}
-        </p>
+        </Alert>
       )}
       <TestSendForm
         disabled={!canSend || busy || !!preview.error}

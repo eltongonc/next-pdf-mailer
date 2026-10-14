@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Send } from "lucide-react";
+import { Button, Paper, TextInput } from "@mantine/core";
 
 export default function TestSendForm({
   disabled,
@@ -10,7 +11,7 @@ export default function TestSendForm({
 }) {
   const [recipient, setRecipient] = useState("");
   return (
-    <form
+    <Paper component="form" withBorder
       className="test-send panel"
       onSubmit={(e) => {
         e.preventDefault();
@@ -21,7 +22,7 @@ export default function TestSendForm({
         <h3>Try the full journey.</h3>
         <p>Save this template and email a PDF using the sample data.</p>
       </div>
-      <input
+      <TextInput className="test-recipient"
         type="email"
         required
         value={recipient}
@@ -29,9 +30,9 @@ export default function TestSendForm({
         placeholder="you@example.com"
         aria-label="Test recipient email"
       />
-      <button className="primary" disabled={disabled}>
-        <Send size={15} /> Send test email
-      </button>
-    </form>
+      <Button type="submit" variant="filled" className="primary" disabled={disabled} leftSection={<Send size={15} />}>
+        Send test email
+      </Button>
+    </Paper>
   );
 }

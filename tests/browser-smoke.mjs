@@ -14,6 +14,11 @@ try {
   });
   await page.click(".template-card");
   await page.waitForSelector("iframe");
+  assert.ok(
+    await page.$eval('textarea[aria-label="Template HTML and CSS"]',
+      (editor) => editor.clientHeight > 300),
+    "Code editor should display multiple lines",
+  );
   const frame = page.frames().find((f) => f !== page.mainFrame());
   await frame.waitForFunction(() =>
     document.body.textContent.includes("Studio North"),

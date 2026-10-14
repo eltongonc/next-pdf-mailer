@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { z } from "zod";
 import { ArrowRight, Sparkles, X } from "lucide-react";
 import {
@@ -43,7 +43,46 @@ const consoleSchema = z.object({
   ),
 });
 const errorSchema = z.object({ error: z.string().optional() });
+// Remount all workspace state (including editor drafts) at an auth boundary.
 export default function Dashboard() {
+  const [session, setSession] = useState({ version: 0, notice: "" });
+  const channel = useRef<BroadcastChannel | null>(null);
+  const reset = useCallback((notice = "") => {
+    setSession((previous) => ({ version: previous.version + 1, notice }));
+    channel.current?.postMessage("session-changed");
+  }, []);
+  useEffect(() => {
+    const updates = new BroadcastChannel("paperpost.session");
+    channel.current = updates;
+    updates.onmessage = () => {
+      setSession((previous) => ({ version: previous.version + 1, notice: "" }));
+    };
+    return () => {
+      channel.current = null;
+      updates.close();
+    };
+  }, []);
+  return (
+    <Workspace
+      key={session.version}
+      onSessionChange={reset}
+      initialNotice={session.notice}
+    />
+  );
+}
+
+function Workspace({
+  onSessionChange,
+  initialNotice,
+}: {
+  onSessionChange: (notice?: string) => void;
+  initialNotice: string;
+}) {
+  const requests = useRef(new AbortController());
+  const changeSession = useCallback((notice = "") => {
+    requests.current.abort();
+    onSessionChange(notice);
+  }, [onSessionChange]);
   const [configured, setConfigured] = useState(false);
   const [view, setView] = useState<View>("templates");
   const [templates, setTemplates] = useState<Template[]>([starter]);
@@ -55,35 +94,60 @@ export default function Dashboard() {
   const [account, setAccount] = useState("");
   const [loaded, setLoaded] = useState(false);
   const [busy, setBusy] = useState(false);
-  const [notice, setNotice] = useState("");
+  const [notice, setNotice] = useState(initialNotice);
   const [newKey, setNewKey] = useState("");
   const [keyName, setKeyName] = useState("Production");
-  async function api(path: string, payload?: unknown) {
+  const api = useCallback(async function api(
+    path: string,
+    payload?: unknown,
+    options?: {
+      method?: string;
+      headers?: Record<string, string>;
+      binary?: boolean;
+    },
+  ) {
+    const signal = requests.current.signal;
+    signal.throwIfAborted();
     const response = await fetch(path, {
-      method: payload ? "POST" : "GET",
+      method: options?.method ?? (payload ? "POST" : "GET"),
+      signal,
+      cache: "no-store",
       headers: {
         "Content-Type": "application/json",
+        ...options?.headers,
       },
       ...(payload ? { body: JSON.stringify(payload) } : {}),
     });
+    signal.throwIfAborted();
+    // Invalid login credentials are not an expired workspace session.
+    if (response.status === 401 && path !== "/api/auth") {
+      changeSession("Your session has expired. Please sign in again.");
+      signal.throwIfAborted();
+    }
     if (!response.ok) {
       const data = errorSchema.parse(await response.json());
+      signal.throwIfAborted();
       throw new Error(data.error || "Request failed.");
     }
-    return response;
-  }
+    const data: unknown = options?.binary
+      ? await response.blob()
+      : await response.json();
+    signal.throwIfAborted();
+    return data;
+  }, [changeSession]);
   async function refresh() {
-    const data = consoleSchema.parse(await (await api("/api/console")).json());
+    const data = consoleSchema.parse(await api("/api/console"));
     setTemplates(data.templates);
     setKeys(data.keys);
     setDeliveries(data.deliveries);
   }
   useEffect(() => {
+    requests.current = new AbortController();
     let active = true;
     async function init() {
       const data = z
         .object({ configured: z.boolean(), email: z.string() })
-        .parse(await (await api("/api/auth")).json());
+        .parse(await api("/api/auth"));
       if (active) setConfigured(data.configured);
       if (!data.configured) {
         try {
@@ -110,16 +174,15 @@ export default function Dashboard() {
     });
     return () => {
       active = false;
+      requests.current.abort();
     };
-  }, []);
+  }, [api]);
   useEffect(() => {
     if (!account) return;
     let active = true;
     async function load() {
       try {
-        const data = consoleSchema.parse(
-          await (await api("/api/console")).json(),
-        );
+        const data = consoleSchema.parse(await api("/api/console"));
         if (active) {
           setTemplates(data.templates);
           setKeys(data.keys);
@@ -133,7 +196,38 @@ export default function Dashboard() {
     return () => {
       active = false;
     };
-  }, [account]);
+  }, [account, api]);
+  useEffect(() => {
+    if (!account) return;
+    async function checkSession() {
+      try {
+        const data = z
+          .object({ email: z.string() })
+          .parse(await api("/api/auth"));
+        if (data.email !== account) {
+          changeSession(
+            data.email ? "" : "Your session has expired. Please sign in again.",
+          );
+        }
+      } catch {
+        // A network outage is not evidence that the session expired.
+      }
+    }
+    const check = () => {
+      void checkSession();
+    };
+    const visible = () => {
+      if (document.visibilityState === "visible") check();
+    };
+    window.addEventListener("focus", check);
+    document.addEventListener("visibilitychange", visible);
+    const timer = window.setInterval(check, 60_000);
+    return () => {
+      window.removeEventListener("focus", check);
+      document.removeEventListener("visibilitychange", visible);
+      window.clearInterval(timer);
+    };
+  }, [account, api, changeSession]);
   async function perform(action: () => Promise<void>) {
     setBusy(true);
     setNotice("");
@@ -146,26 +240,18 @@ export default function Dashboard() {
     }
   }
   async function authenticate(signup: boolean) {
-    const data = z.object({ email: z.string() }).parse(
-      await (
-        await api("/api/auth", {
-          action: signup ? "signup" : "signin",
-          email,
-          password,
-        })
-      ).json(),
+    z.object({ email: z.string() }).parse(
+      await api("/api/auth", {
+        action: signup ? "signup" : "signin",
+        email,
+        password,
+      }),
     );
-    setAccount(data.email);
-    setPassword("");
+    changeSession();
   }
   async function signOut() {
-    const response = await fetch("/api/auth", { method: "DELETE" });
-    if (!response.ok) throw new Error("Unable to sign out.");
-    setAccount("");
-    setTemplates([]);
-    setKeys([]);
-    setDeliveries([]);
-    setSelected(null);
+    await api("/api/auth", undefined, { method: "DELETE" });
+    changeSession();
   }
 
   async function save(template: Template) {
@@ -205,9 +291,7 @@ export default function Dashboard() {
     const result = z
       .object({ key: z.string() })
       .parse(
-        await (
-          await api("/api/console", { action: "create_key", name: keyName })
-        ).json(),
+        await api("/api/console", { action: "create_key", name: keyName }),
       );
     setNewKey(result.key);
     await refresh();
@@ -281,8 +365,14 @@ export default function Dashboard() {
               onSave={(t) => perform(() => save(t))}
               onPdf={(t) =>
                 perform(async () => {
-                  const response = await api("/api/preview", { template: t });
-                  const url = URL.createObjectURL(await response.blob());
+                  const pdf = await api(
+                    "/api/preview",
+                    { template: t },
+                    { binary: true },
+                  );
+                  const url = URL.createObjectURL(
+                    z.instanceof(Blob).parse(pdf),
+                  );
                   const a = document.createElement("a");
                   a.href = url;
                   a.download = "preview.pdf";
@@ -293,20 +383,17 @@ export default function Dashboard() {
               onSend={(t, to) =>
                 perform(async () => {
                   await save(t);
-                  const response = await fetch("/api/v1/send", {
-                    method: "POST",
-                    headers: {
-                      "Content-Type": "application/json",
-                      "Idempotency-Key": crypto.randomUUID(),
-                    },
-                    body: JSON.stringify({
+                  await api(
+                    "/api/v1/send",
+                    {
                       template_id: t.id,
                       to,
                       variables: t.sample_data,
-                    }),
-                  });
-                  const result = errorSchema.parse(await response.json());
-                  if (!response.ok) throw new Error(result.error);
+                    },
+                    {
+                      headers: { "Idempotency-Key": crypto.randomUUID() },
+                    },
+                  );
                   setNotice(
                     "Email accepted by the provider. See delivery history for updates.",
                   );

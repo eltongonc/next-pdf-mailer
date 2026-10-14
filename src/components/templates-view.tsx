@@ -29,13 +29,13 @@ export default function TemplatesView({
     <>
       <div className="stats">
         <Stat
-          label="YOUR TEMPLATES"
+          label="Templates"
           value={String(templates.length).padStart(2, "0")}
           sub="Ready for your next idea"
           icon={<LayoutTemplate size={19} />}
         />
         <Stat
-          label="DOCUMENTS SUBMITTED"
+          label="Documents submitted"
           value={String(deliveryCount).padStart(2, "0")}
           sub={
             deliveryCount
@@ -45,7 +45,7 @@ export default function TemplatesView({
           icon={<Send size={19} />}
         />
         <Stat
-          label="ACTIVE API KEYS"
+          label="Active API keys"
           value={String(keyCount).padStart(2, "0")}
           sub="Built to connect with your app"
           icon={<KeyRound size={19} />}

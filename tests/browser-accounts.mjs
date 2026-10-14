@@ -16,7 +16,7 @@ try {
   await page.waitForSelector('input[type="email"]');
   await page.type('input[type="email"]', email);
   await page.type('input[type="password"]', password);
-  await page.click('.auth button[type="button"]');
+  await page.click('.auth form > button[type="button"]');
   await page.waitForSelector('[aria-label="Sign out"]');
   const account = await page.evaluate(async () =>
     (await fetch("/api/auth")).json(),

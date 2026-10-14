@@ -1,4 +1,5 @@
 import { ArrowRight } from "lucide-react";
+import { Alert, Button, Paper, PasswordInput, TextInput } from "@mantine/core";
 import Brand from "./brand";
 
 export default function AuthForm({
@@ -20,7 +21,7 @@ export default function AuthForm({
 }) {
   return (
     <main className="auth">
-      <div className="auth-card">
+      <Paper className="auth-card" withBorder>
         <Brand />
         <div className="eyebrow">DOCUMENTS, DELIVERED.</div>
         <h1>A little less paperwork.</h1>
@@ -31,9 +32,8 @@ export default function AuthForm({
             onAuthenticate(false);
           }}
         >
-          <label>
-            Email address
-            <input
+            <TextInput
+              label="Email address"
               type="email"
               autoComplete="email"
               required
@@ -41,11 +41,8 @@ export default function AuthForm({
               onChange={(e) => onEmailChange(e.target.value)}
               placeholder="you@company.com"
             />
-          </label>
-          <label>
-            Password
-            <input
-              type="password"
+            <PasswordInput
+              label="Password"
               minLength={12}
               autoComplete="current-password"
               required
@@ -53,24 +50,23 @@ export default function AuthForm({
               onChange={(e) => onPasswordChange(e.target.value)}
               placeholder="At least 12 characters"
             />
-          </label>
-          <button className="primary" disabled={busy}>
-            Sign in <ArrowRight size={16} />
-          </button>
-          <button
+          <Button type="submit" variant="filled" className="primary" disabled={busy} rightSection={<ArrowRight size={16} />}>
+            Sign in
+          </Button>
+          <Button
             type="button"
             disabled={busy || !email || password.length < 12}
             onClick={() => onAuthenticate(true)}
           >
             Create an account
-          </button>
+          </Button>
         </form>
         {notice && (
-          <p role="status" className="notice-inline">
+          <Alert role="status" color="yellow" className="notice-inline">
             {notice}
-          </p>
+          </Alert>
         )}
-      </div>
+      </Paper>
     </main>
   );
 }

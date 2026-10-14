@@ -2,7 +2,17 @@
 
 A Next.js application for creating PDF templates, declaring typed variables, and emailing personalized PDF attachments through an API.
 
-See [the production-readiness checklist](TODO.md) for launch blockers, scaling work, and release criteria.
+See [the production-readiness checklist](docs/production-readiness.md) for launch blockers, scaling work, and release criteria.
+
+## Documentation
+
+See the [documentation index](docs/README.md) for product requirements, technical requirements, design conventions, and production readiness. Contributor and agent rules live in [AGENTS.md](AGENTS.md).
+
+## Design system
+
+The UI follows the [Paperpost Figma design system](https://www.figma.com/design/cQ6RQ4t4E4efFEv8TgUbzN/Paperpost?node-id=68-80). Its light-theme primitives, semantic colors, spacing, and geometry live in `src/app/design-tokens.css`. Mantine controls are configured by `src/components/ui-provider.tsx`; see [design-system conventions](docs/design-system.md) for styling guidance.
+
+Inter and IBM Plex Mono are loaded through `next/font/google` in the root layout. Next.js fetches the fonts during compilation and serves them locally; builds need access to Google Fonts. Use `--pp-action-primary` for actions, `--pp-text-secondary` for supporting text, and the paired `--pp-status-*` colors for operational states. Secondary text uses the library's accessible neutral; the original source neutral remains available as a primitive.
 
 ## Run with Docker
 
@@ -97,7 +107,7 @@ Values are HTML-escaped. Raw HTML interpolation, custom helpers, partials, neste
 
 ## Architecture and limits
 
-- Next.js App Router, React, TypeScript, custom responsive CSS.
+- Next.js App Router, React, TypeScript, Mantine controls, and responsive CSS using Paperpost design tokens.
 - PostgreSQL via a pooled `pg` connection; cookie sessions for the dashboard and hashed bearer API keys for sending.
 - Database access goes through server routes with explicit owner checks and parameterized SQL. PostgreSQL credentials must only be available to the server; there is no public database API. Cookie-authenticated writes require a matching Origin header.
 - Atomic Postgres reservation implements persistent idempotency and 20 sends per minute per workspace.

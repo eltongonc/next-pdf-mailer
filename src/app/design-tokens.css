@@ -1,0 +1,91 @@
+/* Paperpost / DS · 01 Foundations
+ * https://www.figma.com/design/cQ6RQ4t4E4efFEv8TgUbzN/Paperpost?node-id=68-80
+ * Keep source primitives separate from semantic roles. Light theme only.
+ */
+:root {
+  color-scheme: light;
+  --pp-palette-canvas: #f6f4ef;
+  --pp-palette-sidebar: #eeece6;
+  --pp-palette-surface: #ffffff;
+  --pp-palette-ink: #202725;
+  --pp-palette-muted: #717670;
+  --pp-palette-muted-accessible: #686d67;
+  --pp-palette-border: #dadcd4;
+  --pp-palette-blue: #3159d8;
+  --pp-palette-blue-soft: #eaf0ff;
+  --pp-palette-success: #30735b;
+  --pp-palette-success-soft: #e8f2ec;
+  --pp-palette-warning: #916226;
+  --pp-palette-warning-soft: #f7eeda;
+  --pp-palette-danger: #a34338;
+  --pp-palette-danger-soft: #f8ece8;
+  --pp-palette-code: #202c32;
+  --pp-palette-code-text: #9daeb6;
+  --pp-palette-code-border: #354247;
+  --pp-palette-meter: #e8e8e1;
+
+  --pp-surface-canvas: var(--pp-palette-canvas);
+  --pp-surface-sidebar: var(--pp-palette-sidebar);
+  --pp-surface-default: var(--pp-palette-surface);
+  --pp-text-primary: var(--pp-palette-ink);
+  --pp-text-secondary: var(--pp-palette-muted-accessible);
+  --pp-text-inverse: var(--pp-palette-surface);
+  --pp-border-default: var(--pp-palette-border);
+  --pp-action-primary: var(--pp-palette-blue);
+  --pp-action-subtle: var(--pp-palette-blue-soft);
+  --pp-status-success: var(--pp-palette-success);
+  --pp-status-success-bg: var(--pp-palette-success-soft);
+  --pp-status-warning: var(--pp-palette-warning);
+  --pp-status-warning-bg: var(--pp-palette-warning-soft);
+  --pp-status-danger: var(--pp-palette-danger);
+  --pp-status-danger-bg: var(--pp-palette-danger-soft);
+  --pp-surface-code: var(--pp-palette-code);
+  --pp-text-code: var(--pp-palette-code-text);
+  --pp-border-code: var(--pp-palette-code-border);
+  --pp-surface-meter: var(--pp-palette-meter);
+
+  --pp-space-0: 0px;
+  --pp-space-4: 4px;
+  --pp-space-8: 8px;
+  --pp-space-10: 10px;
+  --pp-space-12: 12px;
+  --pp-space-16: 16px;
+  --pp-space-20: 20px;
+  --pp-space-24: 24px;
+  --pp-space-28: 28px;
+  --pp-space-32: 32px;
+  --pp-space-40: 40px;
+  --pp-space-42: 42px;
+  --pp-space-48: 48px;
+  --pp-space-64: 64px;
+  --pp-radius-0: 0px;
+  --pp-radius-3: 3px;
+  --pp-radius-4: 4px;
+  --pp-radius-8: 8px;
+  --pp-size-16: 16px;
+  --pp-size-20: 20px;
+  --pp-size-28: 28px;
+  --pp-size-32: 32px;
+  --pp-size-40: 40px;
+  --pp-size-64: 64px;
+  --pp-size-216: 216px;
+
+  --pp-font-sans: var(--font-inter), Arial, sans-serif;
+  --pp-font-mono: var(--font-plex-mono), ui-monospace, monospace;
+  --pp-type-display: 32px;
+  --pp-type-heading: 25px;
+  --pp-type-section: 17px;
+  --pp-type-card-title: 16px;
+  --pp-type-body: 12px;
+  --pp-type-button: 10px;
+  --pp-type-caption: 11px;
+  --pp-type-metric: 30px;
+  --pp-line-body: 1.5;
+  --pp-line-code: 1.6;
+
+  /* Interaction treatments derived from the library's focus/disabled states. */
+  --pp-focus-ring: 0 0 0 3px
+    color-mix(in srgb, var(--pp-action-primary) 16%, transparent);
+  --pp-shadow-floating: 0 8px 32px
+    color-mix(in srgb, var(--pp-text-primary) 12%, transparent);
+}

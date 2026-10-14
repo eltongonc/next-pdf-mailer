@@ -3,9 +3,9 @@ export default function Brand() {
   return (
     <div className="brand">
       <span>
-        <FileText size={22} strokeWidth={1.8} />
+        <FileText size={20} strokeWidth={1.8} aria-hidden="true" />
       </span>
-      paperpost<span className="brand-period">.</span>
+      paperpost
     </div>
   );
 }
