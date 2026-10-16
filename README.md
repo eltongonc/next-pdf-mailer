@@ -12,7 +12,7 @@ See the [documentation index](docs/README.md) for product requirements, technica
 
 The UI follows the [Paperpost Figma design system](https://www.figma.com/design/cQ6RQ4t4E4efFEv8TgUbzN/Paperpost?node-id=68-80). Its light-theme primitives, semantic colors, spacing, and geometry live in `src/app/design-tokens.css`. Mantine controls are configured by `src/components/ui-provider.tsx`; see [design-system conventions](docs/design-system.md) for styling guidance.
 
-Inter and IBM Plex Mono are loaded through `next/font/google` in the root layout. Next.js fetches the fonts during compilation and serves them locally; builds need access to Google Fonts. Use `--pp-action-primary` for actions, `--pp-text-secondary` for supporting text, and the paired `--pp-status-*` colors for operational states. Secondary text uses the library's accessible neutral; the original source neutral remains available as a primitive.
+Inter and IBM Plex Mono are loaded through `next/font/google` in the root layout. Next.js fetches the fonts during compilation and serves them locally; builds need access to Google Fonts. Use `--pp-action-primary` for actions, `--pp-text-secondary` for supporting text, and the paired `--pp-status-*` colors for operational states. Secondary text uses the accessible charcoal-derived neutral.
 
 ## Run with Docker
 
@@ -127,7 +127,7 @@ docker compose exec -e TEST_DATABASE_URL=postgresql://paperpost:paperpost@db:543
 docker compose exec app node tests/browser-accounts.mjs
 docker build --target production -t paperpost .
 # Browser playground smoke test requires a separate unconfigured dev server:
-# node tests/browser-smoke.mjs
+# APP_URL=http://localhost:3001 node tests/browser-smoke.mjs
 ```
 
 ESLint uses type-aware TypeScript rules, rejects unsafe values, unhandled promises, explicit `any`, non-null assertions, and unused variables, and fails on warnings.

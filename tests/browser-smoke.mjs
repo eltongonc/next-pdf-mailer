@@ -6,7 +6,7 @@ try {
   const errors = [];
   page.on("pageerror", (error) => errors.push(error.message));
   await page.setViewport({ width: 1440, height: 1050, deviceScaleFactor: 1 });
-  await page.goto("http://localhost:3000", { waitUntil: "networkidle0" });
+  await page.goto(process.env.APP_URL || "http://localhost:3000", { waitUntil: "networkidle0" });
   await page.waitForSelector(".template-card");
   await page.screenshot({
     path: "/tmp/paperpost-dashboard.png",
@@ -15,9 +15,16 @@ try {
   await page.click(".template-card");
   await page.waitForSelector("iframe");
   assert.ok(
-    await page.$eval('textarea[aria-label="Template HTML and CSS"]',
-      (editor) => editor.clientHeight > 300),
+    await page.$eval(".code-editor .cm-editor", (editor) => editor.clientHeight > 300),
     "Code editor should display multiple lines",
+  );
+  assert.equal(
+    await page.$eval(
+      '[aria-label="Template HTML and CSS"]',
+      (editor) => editor.getAttribute("contenteditable"),
+    ),
+    "true",
+    "Template HTML should be editable",
   );
   const frame = page.frames().find((f) => f !== page.mainFrame());
   await frame.waitForFunction(() =>
@@ -57,6 +64,19 @@ try {
     ),
     false,
     "Mobile page should not overflow horizontally",
+  );
+  await page.click(".template-card");
+  await page.waitForSelector(".code-editor .cm-editor");
+  assert.ok(
+    await page.$eval(".code-editor .cm-editor", (editor) => editor.clientHeight > 300),
+    "Mobile code editor should display multiple lines",
+  );
+  assert.equal(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth > window.innerWidth,
+    ),
+    false,
+    "Mobile editor should not overflow horizontally",
   );
   const unauthenticated = await page.evaluate(
     async () =>

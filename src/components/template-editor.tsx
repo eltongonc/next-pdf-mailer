@@ -2,6 +2,9 @@ import VariablesEditor from "./variables-editor";
 import DocumentPreview from "./document-preview";
 import TestSendForm from "./test-send-form";
 import { useMemo, useState } from "react";
+import { html } from "@codemirror/lang-html";
+import { EditorView } from "@codemirror/view";
+import CodeMirror from "@uiw/react-codemirror";
 import { Alert, Button, Tabs, TextInput, Textarea } from "@mantine/core";
 import {
   ArrowDownToLine,
@@ -59,7 +62,12 @@ export default function TemplateEditor({
   }
   return (
     <>
-      <Button variant="subtle" className="back" onClick={onBack} leftSection={<ArrowLeft size={14} />}>
+      <Button
+        variant="subtle"
+        className="back"
+        onClick={onBack}
+        leftSection={<ArrowLeft size={14} />}
+      >
         All templates
       </Button>
       <div className="editor-heading">
@@ -77,13 +85,22 @@ export default function TemplateEditor({
           </div>
         </div>
         <div className="button-group">
-          <Button leftSection={<ArrowDownToLine size={16} />}
+          <Button
+            leftSection={<ArrowDownToLine size={16} />}
             disabled={busy || !!preview.error}
             onClick={() => void action(onPdf)}
           >
             Download PDF
           </Button>
-          <Button variant="filled" leftSection={busy ? <LoaderCircle className="spin" size={16} /> : <Check size={16} />}
+          <Button
+            variant="filled"
+            leftSection={
+              busy ? (
+                <LoaderCircle className="spin" size={16} />
+              ) : (
+                <Check size={16} />
+              )
+            }
             className="primary"
             disabled={busy || !!preview.error}
             onClick={() => void action(onSave)}
@@ -93,12 +110,22 @@ export default function TemplateEditor({
         </div>
       </div>
       <div className="editor-grid">
-        <Tabs component="section" className="editor-panel" value={tab} onChange={(value) => {
-          if (value === "html" || value === "variables" || value === "data") setTab(value);
-        }}>
+        <Tabs
+          component="section"
+          className="editor-panel"
+          value={tab}
+          onChange={(value) => {
+            if (value === "html" || value === "variables" || value === "data")
+              setTab(value);
+          }}
+        >
           <Tabs.List className="editor-tabs" aria-label="Template editor">
             {(["html", "variables", "data"] as const).map((t) => (
-              <Tabs.Tab value={t} leftSection={t === "html" ? <Code2 size={15} /> : <Braces size={15} />}
+              <Tabs.Tab
+                value={t}
+                leftSection={
+                  t === "html" ? <Code2 size={15} /> : <Braces size={15} />
+                }
                 key={t}
                 className={tab === t ? "selected" : ""}
               >
@@ -111,44 +138,50 @@ export default function TemplateEditor({
             ))}
           </Tabs.List>
           <Tabs.Panel value={tab} key={tab}>
-          {tab === "html" ? (
-            <>
-              <div className="editor-help">
-                Use <code>{"{{variable}}"}</code> and{" "}
-                <code>{"{{#each items}}…{{/each}}"}</code>. Styles go in a
-                &lt;style&gt; tag.
-              </div>
-              <Textarea
-                className="code-editor-field"
-                classNames={{ input: "code-editor" }}
-                spellCheck={false}
-                aria-label="Template HTML and CSS"
-                value={template.html}
-                onChange={(e) =>
-                  setTemplate({ ...template, html: e.target.value })
+            {tab === "html" ? (
+              <>
+                <div className="editor-help">
+                  Use <code>{"{{variable}}"}</code> and{" "}
+                  <code>{"{{#each items}}…{{/each}}"}</code>. Styles go in a
+                  &lt;style&gt; tag.
+                </div>
+                <CodeMirror
+                  className="code-editor"
+                  height="570px"
+                  extensions={[
+                    html(),
+                    EditorView.contentAttributes.of({
+                      "aria-label": "Template HTML and CSS",
+                      "aria-multiline": "true",
+                      spellcheck: "false",
+                    }),
+                  ]}
+                  value={template.html}
+                  onChange={(html) => setTemplate({ ...template, html })}
+                />
+              </>
+            ) : tab === "data" ? (
+              <>
+                <div className="editor-help">
+                  Use sample JSON to see how your real document will look.
+                </div>
+                <Textarea
+                  className="code-editor-field"
+                  classNames={{ input: "code-editor" }}
+                  spellCheck={false}
+                  aria-label="Sample JSON data"
+                  value={sample}
+                  onChange={(e) => setSample(e.target.value)}
+                />
+              </>
+            ) : (
+              <VariablesEditor
+                variables={template.variables}
+                onChange={(variables) =>
+                  setTemplate({ ...template, variables })
                 }
               />
-            </>
-          ) : tab === "data" ? (
-            <>
-              <div className="editor-help">
-                Use sample JSON to see how your real document will look.
-              </div>
-              <Textarea
-                className="code-editor-field"
-                classNames={{ input: "code-editor" }}
-                spellCheck={false}
-                aria-label="Sample JSON data"
-                value={sample}
-                onChange={(e) => setSample(e.target.value)}
-              />
-            </>
-          ) : (
-            <VariablesEditor
-              variables={template.variables}
-              onChange={(variables) => setTemplate({ ...template, variables })}
-            />
-          )}
+            )}
           </Tabs.Panel>
         </Tabs>
         <DocumentPreview html={preview.html} error={preview.error} />

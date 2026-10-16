@@ -20,9 +20,12 @@ import {
 import type { ReactNode } from "react";
 import classes from "./ui-theme.module.css";
 
+import "@mantine/core/styles.css";
+import "@mantine/code-highlight/styles.css";
+
 const theme = createTheme({
   primaryColor: "paperpost",
-  primaryShade: 6,
+  primaryShade: 9,
   fontFamily: "var(--pp-font-sans)",
   fontFamilyMonospace: "var(--pp-font-mono)",
   defaultRadius: "sm",
@@ -30,18 +33,26 @@ const theme = createTheme({
   respectReducedMotion: true,
   colors: {
     paperpost: [
-      "#eaf0ff", "#d5dfff", "#bbcaff", "#97aff3", "#7493ec",
-      "#5275e3", "#3159d8", "#294bb8", "#233f9a", "#1d347c",
+      "#eefcf8",
+      "#def5ef",
+      "#b7ecdd",
+      "#8de3cb",
+      "#6cdbbb",
+      "#58d6b1",
+      "#4dd4ac",
+      "#23b38c",
+      "#32a785",
+      "#135e4a",
     ],
   },
   fontSizes: { xs: "11px", sm: "12px", md: "14px", lg: "16px", xl: "17px" },
-  radius: { xs: "3px", sm: "4px", md: "8px", lg: "8px", xl: "8px" },
+  radius: { xs: "2px", sm: "2px", md: "4px", lg: "4px", xl: "4px" },
   spacing: { xs: "8px", sm: "12px", md: "16px", lg: "24px", xl: "32px" },
   headings: {
     fontFamily: "var(--pp-font-sans)",
-    fontWeight: "600",
+    fontWeight: "700",
     sizes: {
-      h1: { fontSize: "25px", lineHeight: "1.3" },
+      h1: { fontSize: "32px", lineHeight: "1.3" },
       h2: { fontSize: "17px", lineHeight: "1.5" },
       h3: { fontSize: "16px", lineHeight: "1.5" },
     },
@@ -82,6 +93,11 @@ const theme = createTheme({
 const cssVariablesResolver: CSSVariablesResolver = () => ({
   variables: {},
   light: {
+    "--mantine-color-error": "var(--pp-status-danger)",
+    "--mantine-color-red-light": "var(--pp-status-danger-bg)",
+    "--mantine-color-red-light-color": "var(--pp-status-danger)",
+    "--mantine-color-yellow-light": "var(--pp-status-warning-bg)",
+    "--mantine-color-yellow-light-color": "var(--pp-status-warning)",
     "--mantine-color-body": "var(--pp-surface-canvas)",
     "--mantine-color-text": "var(--pp-text-primary)",
     "--mantine-color-dimmed": "var(--pp-text-secondary)",
@@ -89,6 +105,7 @@ const cssVariablesResolver: CSSVariablesResolver = () => ({
     "--mantine-color-default-border": "var(--pp-border-default)",
     "--mantine-color-default-hover": "var(--pp-action-subtle)",
     "--mantine-color-paperpost-filled": "var(--pp-action-primary)",
+    "--mantine-color-paperpost-filled-hover": "var(--pp-action-primary-hover)",
     "--mantine-color-paperpost-light": "var(--pp-action-subtle)",
     "--mantine-color-paperpost-light-color": "var(--pp-action-primary)",
   },

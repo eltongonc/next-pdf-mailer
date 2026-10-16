@@ -37,7 +37,7 @@ select.input {
 }
 
 .input[data-error] {
-  border-color: var(--pp-status-danger);
+  border-color: var(--pp-border-danger);
   color: var(--pp-text-primary);
 }
 

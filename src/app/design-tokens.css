@@ -1,43 +1,64 @@
 /* Paperpost / DS · 01 Foundations
  * https://www.figma.com/design/cQ6RQ4t4E4efFEv8TgUbzN/Paperpost?node-id=68-80
+ * Neutral surfaces from evengreener.com; ruled geometry from heronaiapp.com.
  * Keep source primitives separate from semantic roles. Light theme only.
  */
 :root {
   color-scheme: light;
-  --pp-palette-canvas: #f6f4ef;
-  --pp-palette-sidebar: #eeece6;
-  --pp-palette-surface: #ffffff;
-  --pp-palette-ink: #202725;
-  --pp-palette-muted: #717670;
-  --pp-palette-muted-accessible: #686d67;
-  --pp-palette-border: #dadcd4;
-  --pp-palette-blue: #3159d8;
-  --pp-palette-blue-soft: #eaf0ff;
-  --pp-palette-success: #30735b;
-  --pp-palette-success-soft: #e8f2ec;
-  --pp-palette-warning: #916226;
-  --pp-palette-warning-soft: #f7eeda;
-  --pp-palette-danger: #a34338;
-  --pp-palette-danger-soft: #f8ece8;
-  --pp-palette-code: #202c32;
-  --pp-palette-code-text: #9daeb6;
-  --pp-palette-code-border: #354247;
-  --pp-palette-meter: #e8e8e1;
+  --pp-palette-brand-0: #eefcf8;
+  --pp-palette-brand-1: #def5ef;
+  --pp-palette-brand-2: #b7ecdd;
+  --pp-palette-brand-3: #8de3cb;
+  --pp-palette-brand-4: #6cdbbb;
+  --pp-palette-brand-5: #58d6b1;
+  --pp-palette-brand-6: #4dd4ac;
+  --pp-palette-brand-7: #23b38c;
+  --pp-palette-brand-8: #32a785;
+  --pp-palette-brand-9: #135e4a;
+  --pp-palette-black: #000000;
+  --pp-palette-white: #ffffff;
+  --pp-palette-charcoal: #3d3d49;
+  --pp-palette-clay: #ad5c51;
+  --pp-palette-peach: #f4cbb2;
+  --pp-palette-canvas: #f5f4ef;
+  --pp-palette-ivory: #f0efe7;
+  --pp-palette-heading: var(--pp-palette-charcoal);
+  --pp-palette-sidebar: var(--pp-palette-white);
+  --pp-palette-surface: var(--pp-palette-white);
+  --pp-palette-ink: var(--pp-palette-charcoal);
+  --pp-palette-muted: #646471;
+  --pp-palette-muted-accessible: var(--pp-palette-muted);
+  --pp-palette-border: #deded7;
+  --pp-palette-success: var(--pp-palette-brand-9);
+  --pp-palette-success-soft: var(--pp-palette-brand-1);
+  --pp-palette-warning: #71452c;
+  --pp-palette-warning-soft: color-mix(in srgb, var(--pp-palette-peach) 30%, var(--pp-palette-white));
+  --pp-palette-danger: #86463e;
+  --pp-palette-danger-soft: #f9eeeb;
+  --pp-palette-code: var(--pp-palette-charcoal);
+  --pp-palette-code-text: var(--pp-palette-white);
+  --pp-palette-code-border: var(--pp-palette-charcoal);
+  --pp-palette-meter: #e1e0d8;
 
   --pp-surface-canvas: var(--pp-palette-canvas);
   --pp-surface-sidebar: var(--pp-palette-sidebar);
+  --pp-surface-muted: var(--pp-palette-ivory);
   --pp-surface-default: var(--pp-palette-surface);
+  --pp-text-heading: var(--pp-palette-heading);
   --pp-text-primary: var(--pp-palette-ink);
   --pp-text-secondary: var(--pp-palette-muted-accessible);
   --pp-text-inverse: var(--pp-palette-surface);
   --pp-border-default: var(--pp-palette-border);
-  --pp-action-primary: var(--pp-palette-blue);
-  --pp-action-subtle: var(--pp-palette-blue-soft);
+  --pp-action-primary: var(--pp-palette-brand-9);
+  --pp-action-primary-hover: color-mix(in srgb, var(--pp-palette-brand-9) 90%, var(--pp-palette-black));
+  --pp-action-accent: var(--pp-palette-brand-7);
+  --pp-action-subtle: var(--pp-palette-ivory);
   --pp-status-success: var(--pp-palette-success);
   --pp-status-success-bg: var(--pp-palette-success-soft);
   --pp-status-warning: var(--pp-palette-warning);
   --pp-status-warning-bg: var(--pp-palette-warning-soft);
   --pp-status-danger: var(--pp-palette-danger);
+  --pp-border-danger: var(--pp-palette-clay);
   --pp-status-danger-bg: var(--pp-palette-danger-soft);
   --pp-surface-code: var(--pp-palette-code);
   --pp-text-code: var(--pp-palette-code-text);
@@ -59,9 +80,9 @@
   --pp-space-48: 48px;
   --pp-space-64: 64px;
   --pp-radius-0: 0px;
-  --pp-radius-3: 3px;
-  --pp-radius-4: 4px;
-  --pp-radius-8: 8px;
+  --pp-radius-3: 2px;
+  --pp-radius-4: 2px;
+  --pp-radius-8: 4px;
   --pp-size-16: 16px;
   --pp-size-20: 20px;
   --pp-size-28: 28px;
@@ -73,13 +94,13 @@
   --pp-font-sans: var(--font-inter), Arial, sans-serif;
   --pp-font-mono: var(--font-plex-mono), ui-monospace, monospace;
   --pp-type-display: 32px;
-  --pp-type-heading: 25px;
+  --pp-type-heading: 32px;
   --pp-type-section: 17px;
   --pp-type-card-title: 16px;
   --pp-type-body: 12px;
   --pp-type-button: 10px;
   --pp-type-caption: 11px;
-  --pp-type-metric: 30px;
+  --pp-type-metric: 38px;
   --pp-line-body: 1.5;
   --pp-line-code: 1.6;
 
@@ -87,5 +108,5 @@
   --pp-focus-ring: 0 0 0 3px
     color-mix(in srgb, var(--pp-action-primary) 16%, transparent);
   --pp-shadow-floating: 0 8px 32px
-    color-mix(in srgb, var(--pp-text-primary) 12%, transparent);
+    color-mix(in srgb, var(--pp-palette-black) 12%, transparent);
 }
