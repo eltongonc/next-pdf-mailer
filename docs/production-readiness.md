@@ -6,6 +6,12 @@ Existing foundations: a production Docker image, PostgreSQL with owner-scoped qu
 
 ## How to use this list
 
+Deployment foundation work now includes production startup validation, a standalone `compose.production.yaml`, and uncached liveness/database readiness endpoints; see [deployment](deployment.md). The deployment and health checklist items remain open until target-host restarts, graceful shutdown, and staging checks are demonstrated.
+
+The 2026-10-16 dependency pass upgraded Next.js/its ESLint configuration to 16.4.2 and Handlebars to 4.7.10, and repaired missing Linux lockfile entries. npm still reports five high-severity findings in the development-only `eslint-config-next` → `fast-glob` → `micromatch` → `braces` chain. Track an upstream fix; the suggested forced downgrade is not an approved resolution. Container scanning and the maintenance policy remain open.
+
+Local verification on 2026-10-16: zero-warning lint and type checking passed; all 17 tests passed with PostgreSQL integration enabled; the account browser test passed; the production Docker build passed (its database integration test is deliberately skipped without database credentials). Production-only `npm ci` reported zero advisories. The built image exited with status 1 without required configuration and became healthy with initialized local PostgreSQL using the production Compose file. One intermediate integration run timed out connecting to PostgreSQL; a direct connection check and the subsequent full rerun passed. This is local evidence, not staging delivery or target-host recovery evidence.
+
 Tasks are grouped by estimated **focused work time for one developer familiar with this repository**, including implementation, relevant tests, and documentation. A day means roughly 5–8 focused hours. These are planning estimates, not measured commitments; infrastructure choices and unfamiliar tooling can increase them. DNS propagation, provider approval, and other external waits are additional elapsed time.
 
 Keep priority separate from duration: **P0** is required before real customer traffic, **P1** before general availability or higher traffic, and **P2** covers product decisions. Shorter does not mean more urgent. Complete prerequisites before choosing a task solely by its size.
@@ -33,7 +39,7 @@ Time here covers recording a decision and its rationale; implementing the chosen
 
 ## Half a day (3–5 hours) — a focused work block
 
-- [ ] **P0** · **Validate configuration at startup.** Fail production startup for missing or invalid database, origin, and enabled email-provider settings. Missing `DATABASE_URL` must not silently present a production playground.
+- [x] **P0** · **Validate configuration at startup.** Production requires a valid PostgreSQL URL and exact HTTPS origin; enabling email requires valid provider settings together. Unit tests cover missing/invalid settings and secret redaction; the production image exits with status 1 without required configuration. Provider credentials still require live staging verification.
 - [ ] **P0** · **Configure HTTPS and the public origin.** Terminate TLS at the ingress and set `APP_ORIGIN` to the exact public origin. Verify login, Secure cookies, logout, authenticated writes, and rejection of cross-origin requests through the actual proxy.
 - [ ] **P0** · **Use a restricted runtime database role.** Separate schema ownership/migrations from application access; grant only required table/function privileges. Keep PostgreSQL private and verify encrypted connections when connecting across hosts.
 - [ ] **P0** · **Configure and test response security headers.** Add an application-compatible CSP, frame restrictions, content-type protections, referrer policy, and HTTPS transport policy. Verify that the dashboard and sandboxed document previews still work.

@@ -4,6 +4,8 @@ A Next.js application for creating PDF templates, declaring typed variables, and
 
 See [the production-readiness checklist](docs/production-readiness.md) for launch blockers, scaling work, and release criteria.
 
+For a production host, use the standalone [deployment configuration and staging checks](docs/deployment.md). Production startup requires a PostgreSQL URL and an exact HTTPS public origin; enabling email requires all three provider settings together.
+
 ## Documentation
 
 See the [documentation index](docs/README.md) for product requirements, technical requirements, design conventions, and production readiness. Contributor and agent rules live in [AGENTS.md](AGENTS.md).

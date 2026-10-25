@@ -8,6 +8,7 @@ Start with the root [README](../README.md) for setup, configuration, API usage, 
 | [Technical requirements](technical-requirements.md) | Current implementation contract and constraints, with additional production requirements identified separately. |
 | [Design system](design-system.md) | Paperpost tokens, Mantine integration, styling ownership, and UI verification. |
 | [Production readiness](production-readiness.md) | Prioritized implementation checklist, dependencies, and launch gate. |
+| [Deployment](deployment.md) | Production Compose configuration, runtime validation, probes, and staging release checks. |
 
 ## Maintenance
 

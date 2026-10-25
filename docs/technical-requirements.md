@@ -9,6 +9,8 @@ Sections 1–7 describe the current implementation contract and its constraints.
 - Use Next.js App Router, React, and TypeScript. Dependency versions must follow `package.json` and the lockfile.
 - Run server routes on Node.js 22 or later. PDF generation requires a host capable of running Puppeteer's Chromium with its sandbox enabled; standard edge/serverless deployment is not supported out of the box.
 - Use PostgreSQL 16 or later for accounts, sessions, templates, API keys, authentication limits, and delivery records.
+- Production startup validates a PostgreSQL database URL and an exact HTTPS `APP_ORIGIN`; partial email-provider configuration is rejected. Development retains the unconfigured playground. See [deployment](deployment.md) for the standalone production Compose file and probe contracts.
+- Database connections have a five-second connection timeout and ten-second query/statement timeouts.
 - Use Handlebars for restricted template interpolation, Zod for request/schema validation, Puppeteer for PDF generation, and Resend for email delivery and signed webhooks.
 - Keep database access and provider credentials on the server. Use parameterized SQL and explicit owner checks.
 - Support a database-backed account mode and a browser-only local playground. The playground must not send email or create API keys; unauthenticated PDF generation is permitted only outside production.
